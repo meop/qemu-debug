@@ -5,7 +5,7 @@ import os.path as ospath
 
 from enum import Enum
 
-OUT_DIR = './out'
+OUT_DIR = ospath.join(ospath.dirname(ospath.dirname(__file__)), 'out')
 
 
 class Format(Enum):
@@ -14,7 +14,7 @@ class Format(Enum):
 
 
 async def out(name: str, data: dict, fmt: Format = Format.json):
-  path = ospath.join(ospath.dirname(__file__), '..', OUT_DIR, f'{name}.{fmt.name}')
+  path = ospath.join(OUT_DIR, f'{name}.{fmt.name}')
 
   async with aiofiles.open(path, mode='w') as f:
     output = ''
