@@ -7,6 +7,8 @@ requires-python = ">=3.13"
 dependencies = [
     "aiofiles>=24.1.0",
     "click>=8.2.1",
+    "pandas>=2.3.1",
+    "prettytable>=3.16.0",
     "pyyaml>=6.0.2",
     "qemu-qmp>=0.0.3",
 ]

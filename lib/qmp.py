@@ -1,16 +1,16 @@
 import asyncio
 import os.path as ospath
 import subprocess
+from typing import Optional
 
 from qemu.qmp import QMPClient
 from qemu.qmp.events import EventListener
-from typing import Optional
 
 TMP_QEMU_DIR_PATH = '/tmp/qemu'
 SOCKET_NAME = 'qmp.socket'
 
 
-class QemuController:
+class QmpClientSocket:
   client: Optional[QMPClient]
 
   def __init__(self, name: str):
@@ -18,7 +18,7 @@ class QemuController:
     self.name = name
     self.socket_path = ospath.join(TMP_QEMU_DIR_PATH, self.name, SOCKET_NAME)
 
-  async def run(self, cmd: str, args: Optional[dict] = None):
+  async def __call__(self, cmd: str, arg: Optional[dict] = None):
     res = subprocess.run(
       ['stat', '--format=%a', self.socket_path], capture_output=True, text=True
     )
@@ -30,7 +30,7 @@ class QemuController:
     if self.client is None:
       stateless = True
       await self.setup()
-    res = await self.client.execute(cmd, arguments=args)
+    res = await self.client.execute(cmd, arg)
     if stateless:
       await self.teardown()
     return res
@@ -41,6 +41,7 @@ class QemuController:
 
   async def teardown(self):
     await self.client.disconnect()
+    self.client = None
 
   async def watch(self, events: EventListener):
     try:

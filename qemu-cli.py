@@ -1,40 +1,31 @@
-import asyncio
 import click
-from functools import wraps
 
-from lib.file import Format, out
-from lib.qemu import QemuController
-
-
-def coroutine(f):
-  @wraps(f)
-  def wrapper(*args, **kwargs):
-    return asyncio.run(f(*args, **kwargs))
-
-  return wrapper
+from lib.cli.query_cpus_fast import query_cpus_fast
+from lib.cli.query_stats import query_stats
+from lib.cli.query_stats_schemas import query_stats_schemas
+from lib.file import Format
 
 
-@click.group()
+@click.group
 @click.option(
   '-f',
   '--format',
   'fmt',
-  default=Format.json.name,
+  default=Format.text.name,
   type=click.Choice([f.name for f in Format]),
 )
+@click.option('-l', '--loop', 'loop', is_flat=True)
+@click.option('-p', '--print', 'print', is_flag=True)
+@click.option('-s', '--save', 'save', is_flag=True)
 @click.argument('name', required=True)
 @click.pass_context
-def cli(ctx: dict, fmt: str, name: str):
-  ctx.obj = {'name': name, 'fmt': Format(fmt)}
+def cli(ctx: dict, fmt: str, print: bool, save: bool, name: str):
+  ctx.obj = {'name': name, 'fmt': Format(fmt), 'print': print, 'save': save}
 
 
-@cli.command()
-@click.pass_obj
-@coroutine
-async def query_stats_schemas(obj: dict):
-  ctrl = QemuController(obj['name'])
-  cmd = 'query-stats-schemas'
-  await out(cmd, await ctrl.run(cmd), obj['fmt'])
+cli.add_command(query_cpus_fast)
+cli.add_command(query_stats)
+cli.add_command(query_stats_schemas)
 
 
 if __name__ == '__main__':
