@@ -17,9 +17,9 @@ class Format(Enum):
   yaml = 'yaml'
 
 
-def to_str(data: List[dict], fmt: Format = Format.text):
+def to_str(data: List[dict], format: Format = Format.text):
   output = ''
-  match fmt:
+  match format:
     case Format.text:
       table = PrettyTable()
       table.field_names = list(data[0].keys())
@@ -33,17 +33,12 @@ def to_str(data: List[dict], fmt: Format = Format.text):
   return output
 
 
-async def to_file(
-  output: str,
-  name: str,
-  ext: str,
-  append: bool = False,
-):
+async def to_file(data: str, name: str, ext: str, append: bool = False):
   os.makedirs(SAVE_DIR, exist_ok=True)
   path = ospath.join(SAVE_DIR, f'{name}.{ext}')
 
   mode = 'a' if append else 'w'
   async with aiofiles.open(path, mode) as f:
-    if not output.endswith('\n'):
-      output += '\n'
-    await f.write(output)
+    if not data.endswith('\n'):
+      data += '\n'
+    await f.write(data)

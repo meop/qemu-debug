@@ -20,17 +20,14 @@ class QueryCpusFastCmd(Cmd):
       sep='_',
     )
 
-    data = await self.to_dict(df)
+    data = self.to_dict(df)
+    data_str = self.to_str(data, obj['format'])
+
+    if obj['print']:
+      print(data_str)
 
     if obj['save']:
-      await self.save(
-        data,
-        {
-          'name': self.name,
-          'fmt': obj['fmt'],
-          'print': obj['print'],
-        },
-      )
+      await self.save(data, self.name, obj['format'])
 
     return data
 

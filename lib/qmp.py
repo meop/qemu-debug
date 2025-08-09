@@ -19,13 +19,6 @@ class QmpClientSocket:
     self.socket_path = ospath.join(TMP_QEMU_DIR_PATH, self.name, SOCKET_NAME)
 
   async def __call__(self, cmd: str, arg: Optional[dict] = None):
-    res = subprocess.run(
-      ['stat', '--format=%a', self.socket_path], capture_output=True, text=True
-    )
-    octal = '666'
-    if res.stdout.strip() != octal:
-      subprocess.run(['sudo', 'chmod', '666', self.socket_path])
-
     stateless = False
     if self.client is None:
       stateless = True
@@ -36,6 +29,13 @@ class QmpClientSocket:
     return res
 
   async def setup(self):
+    res = subprocess.run(
+      ['stat', '--format=%a', self.socket_path], capture_output=True, text=True
+    )
+    octal = '666'
+    if res.stdout.strip() != octal:
+      subprocess.run(['sudo', 'chmod', octal, self.socket_path])
+
     self.client = QMPClient(self.name)
     await self.client.connect(self.socket_path)
 

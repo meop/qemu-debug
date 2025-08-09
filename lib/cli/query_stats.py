@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 
 import click
@@ -99,7 +100,9 @@ class QueryStatsCmd(Cmd):
   def __init__(self, socket: QmpClientSocket):
     super().__init__(socket, 'query-stats')
 
-  async def __call__(self, obj: dict, target: str, providers: List[str]):
+  async def __call__(
+    self, obj: dict, index: int, loop: bool, target: str, providers: List[str]
+  ):
     providers_names = []
     for p in providers if providers else TARGET_TO_PROVIDER_TO_NAMES[target].keys():
       providers_names.append(
@@ -109,55 +112,68 @@ class QueryStatsCmd(Cmd):
     arg_base = {'target': target, 'providers': providers_names}
     args = []
     if target == 'vcpu':
-      for r in await QueryCpusFastCmd(self.socket)(obj):
+      for r in await QueryCpusFastCmd(self.socket)(
+        {**obj, 'print': False, 'save': False}
+      ):
         arg_base_new = arg_base.copy()
         arg_base_new.update({'vcpus': [r['qom_path']]})
         args.append(arg_base_new)
     else:
       args.append(arg_base)
 
+    if index != -1:
+      args = [args[index]]
+
     datas = []
-    for idx, arg in enumerate(args):
-      res = await super().__call__(arg)
-      if not res:
-        return
 
-      df = pd.json_normalize(
-        res,
-        record_path=['stats'],
-        record_prefix='stat_',
-        meta=['provider'],
-        errors='ignore',
-      )
-      if 'vcpus' in arg:
-        df['vcpu'] = arg['vcpus'][0]
+    while True:
+      for idx, arg in enumerate(args):
+        res = await super().__call__(arg)
+        if not res:
+          return
 
-      data = await self.to_dict(df)
-
-      if obj['save']:
-        name = f'{self.name}-{target}'
-        if target == 'vcpu':
-          name = f'{name}-{idx}'
-
-        await self.save(
-          data,
-          {
-            'name': name,
-            'fmt': obj['fmt'],
-            'print': obj['print'],
-          },
+        df = pd.json_normalize(
+          res,
+          record_path=['stats'],
+          record_prefix='stat_',
+          meta=['provider'],
+          errors='ignore',
         )
+        if 'vcpus' in arg:
+          df['vcpu'] = arg['vcpus'][0]
 
-      datas.append(data)
+        data = self.to_dict(df)
+        data_str = self.to_str(data, obj['format'])
+
+        if obj['print']:
+          print(data_str)
+
+        if obj['save']:
+          name = f'{self.name}-{target}'
+          if target == 'vcpu':
+            name = f'{name}-{idx if index == -1 else index}'
+          await self.save(data_str, name, obj['format'])
+
+        datas.append(data)
+
+      if loop:
+        datas.clear()
+        await asyncio.sleep(2)
+      else:
+        break
 
     return datas
 
 
 @click.command()
+@click.option('-i', '--index', default=-1, type=click.INT)
+@click.option('-l', '--loop', is_flag=True)
 @click.argument('target', required=True)
 @click.argument('providers', nargs=-1)
 @click.pass_obj
 @coroutine
-async def query_stats(obj: dict, target: str, providers: List[str]):
+async def query_stats(
+  obj: dict, index: int, loop: bool, target: str, providers: List[str]
+):
   socket = QmpClientSocket(obj['name'])
-  return await QueryStatsCmd(socket)(obj, target, providers)
+  return await QueryStatsCmd(socket)(obj, index, loop, target, providers)

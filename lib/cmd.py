@@ -1,6 +1,6 @@
 import asyncio
 from functools import wraps
-from typing import Optional, TypedDict
+from typing import Optional
 
 from pandas import DataFrame
 
@@ -16,13 +16,6 @@ def coroutine(f):
   return wrapper
 
 
-class FileOpt(TypedDict):
-  append: Optional[bool]
-  fmt: file.Format
-  name: str
-  print: Optional[bool]
-
-
 class Cmd:
   def __init__(self, socket: QmpClientSocket, name: str):
     self.socket = socket
@@ -31,17 +24,12 @@ class Cmd:
   async def __call__(self, arg: Optional[dict] = None):
     return await self.socket(self.name, arg)
 
-  async def to_dict(self, df: DataFrame):
+  def to_dict(self, df: DataFrame):
     df.columns = df.columns.str.replace('-', '_')
     return df.to_dict(orient='records')
 
-  async def save(self, data: dict, opt: FileOpt):
-    output = file.to_str(data, opt['fmt'])
-    if 'print' in opt and opt['print']:
-      print(output)
-    await file.to_file(
-      output,
-      opt['name'],
-      opt['fmt'].name,
-      'append' in opt and opt['append'],
-    )
+  def to_str(self, data: dict, format: file.Format):
+    return file.to_str(data, format)
+
+  async def save(self, data: str, name: str, format: file.Format, append: bool = False):
+    await file.to_file(data, name, format.name, append)
