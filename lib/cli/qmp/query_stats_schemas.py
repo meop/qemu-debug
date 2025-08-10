@@ -17,7 +17,7 @@ class QueryStatsSchemasCmd(Cmd):
     df = pd.json_normalize(
       res,
       record_path=['stats'],
-      record_prefix='stats_',
+      record_prefix='stat_',
       meta=['provider', 'target'],
       errors='ignore',
     )
@@ -29,12 +29,12 @@ class QueryStatsSchemasCmd(Cmd):
       print(data_str)
 
     if obj['save']:
-      await self.save(data, self.name, obj['format'])
+      await self.save(data_str, self.name, obj['format'])
 
     return data
 
 
-@click.command()
+@click.command
 @click.pass_obj
 @coroutine
 async def query_stats_schemas(obj: dict):

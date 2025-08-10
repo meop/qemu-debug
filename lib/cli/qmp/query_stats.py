@@ -1,14 +1,13 @@
-import asyncio
 from typing import List
 
 import click
 import pandas as pd
 
-from lib.cli.query_cpus_fast import QueryCpusFastCmd
+from lib.cli.qmp.query_cpus_fast import QueryCpusFastCmd
 from lib.cmd import Cmd, coroutine
 from lib.qmp import QmpClientSocket
 
-TARGET_TO_PROVIDER_TO_NAMES = {
+TARGET_PROVIDER_STATS = {
   'vcpu': {
     'kvm': [
       'notify_window_exits',
@@ -101,79 +100,82 @@ class QueryStatsCmd(Cmd):
     super().__init__(socket, 'query-stats')
 
   async def __call__(
-    self, obj: dict, index: int, loop: bool, target: str, providers: List[str]
+    self, obj: dict, index: int, target: str, provider: str, stats: List[str]
   ):
-    providers_names = []
-    for p in providers if providers else TARGET_TO_PROVIDER_TO_NAMES[target].keys():
-      providers_names.append(
-        {'provider': p, 'names': TARGET_TO_PROVIDER_TO_NAMES[target][p]}
+    providers_to_names = []
+    for p in [provider] if provider else TARGET_PROVIDER_STATS[target].keys():
+      names = (
+        [stat for stat in TARGET_PROVIDER_STATS[target][p] if stat in stats]
+        if stats
+        else TARGET_PROVIDER_STATS[target][p]
       )
+      providers_to_names.append({'provider': p, 'names': names})
 
-    arg_base = {'target': target, 'providers': providers_names}
     args = []
-    if target == 'vcpu':
-      for r in await QueryCpusFastCmd(self.socket)(
-        {**obj, 'print': False, 'save': False}
+    for ptn in providers_to_names:
+      arg_base = {'target': target, 'providers': [ptn]}
+      if target != 'vcpu':
+        args.append(arg_base)
+        continue
+
+      for i, r in enumerate(
+        await QueryCpusFastCmd(self.socket)({**obj, 'print': False, 'save': False})
       ):
-        arg_base_new = arg_base.copy()
-        arg_base_new.update({'vcpus': [r['qom_path']]})
-        args.append(arg_base_new)
-    else:
-      args.append(arg_base)
+        if index > -1 and index != i:
+          continue
+        arg_base_copy = arg_base.copy()
+        arg_base_copy.update({'vcpus': [r['qom_path']]})
+        args.append(arg_base_copy)
 
-    if index != -1:
-      args = [args[index]]
+    df_combo = pd.DataFrame()
+    for arg in args:
+      res = await super().__call__(arg)
+      if not res:
+        return
 
-    datas = []
+      df = pd.json_normalize(
+        res,
+        record_path=['stats'],
+        record_prefix='stat_',
+        meta=['provider'],
+        errors='ignore',
+      )
+      provider = df['provider'].iloc[0]
+      df = df.pivot(
+        index='provider',
+        columns='stat_name',
+        values='stat_value',
+      )
+      df.insert(0, 'provider', provider)
+      df.insert(1, 'target', target)
+      df.insert(2, 'vcpu', arg['vcpus'][0] if 'vcpus' in arg else '')
 
-    while True:
-      for idx, arg in enumerate(args):
-        res = await super().__call__(arg)
-        if not res:
-          return
+      if df_combo.empty:
+        df_combo = df
+        continue
+      df_combo = pd.concat([df_combo, df])
 
-        df = pd.json_normalize(
-          res,
-          record_path=['stats'],
-          record_prefix='stat_',
-          meta=['provider'],
-          errors='ignore',
-        )
-        if 'vcpus' in arg:
-          df['vcpu'] = arg['vcpus'][0]
+    data = self.to_dict(df_combo)
+    data_str = self.to_str(data, obj['format'])
 
-        data = self.to_dict(df)
-        data_str = self.to_str(data, obj['format'])
+    if obj['print']:
+      print(data_str)
 
-        if obj['print']:
-          print(data_str)
+    if obj['save']:
+      await self.save(data_str, f'{self.name}-{target}', obj['format'])
 
-        if obj['save']:
-          name = f'{self.name}-{target}'
-          if target == 'vcpu':
-            name = f'{name}-{idx if index == -1 else index}'
-          await self.save(data_str, name, obj['format'])
-
-        datas.append(data)
-
-      if loop:
-        datas.clear()
-        await asyncio.sleep(2)
-      else:
-        break
-
-    return datas
+    return df_combo
 
 
-@click.command()
+@click.command
 @click.option('-i', '--index', default=-1, type=click.INT)
-@click.option('-l', '--loop', is_flag=True)
 @click.argument('target', required=True)
-@click.argument('providers', nargs=-1)
+@click.argument('provider', required=False, default='')
+@click.argument('stats', nargs=-1)
 @click.pass_obj
 @coroutine
 async def query_stats(
-  obj: dict, index: int, loop: bool, target: str, providers: List[str]
+  obj: dict, index: int, target: str, provider: str, stats: List[str]
 ):
   socket = QmpClientSocket(obj['name'])
-  return await QueryStatsCmd(socket)(obj, index, loop, target, providers)
+  return await QueryStatsCmd(socket)(obj, index, target, provider, stats)

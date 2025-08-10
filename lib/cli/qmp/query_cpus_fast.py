@@ -27,12 +27,12 @@ class QueryCpusFastCmd(Cmd):
       print(data_str)
 
     if obj['save']:
-      await self.save(data, self.name, obj['format'])
+      await self.save(data_str, self.name, obj['format'])
 
     return data
 
 
-@click.command()
+@click.command
 @click.pass_obj
 @coroutine
 async def query_cpus_fast(obj: dict):
