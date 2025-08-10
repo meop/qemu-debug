@@ -1,11 +1,11 @@
 import click
 import pandas as pd
 
-from lib.cmd import Cmd, coroutine
+from lib.cmd import QmpCmd, coroutine
 from lib.qmp import QmpClientSocket
 
 
-class QueryCpusFastCmd(Cmd):
+class QueryCpusFastQmpCmd(QmpCmd):
   def __init__(self, socket: QmpClientSocket):
     super().__init__(socket, 'query-cpus-fast')
 
@@ -33,8 +33,9 @@ class QueryCpusFastCmd(Cmd):
 
 
 @click.command
+@click.argument('name', required=True)
 @click.pass_obj
 @coroutine
-async def query_cpus_fast(obj: dict):
-  socket = QmpClientSocket(obj['name'])
-  return await QueryCpusFastCmd(socket)(obj)
+async def query_cpus_fast(obj: dict, name: str):
+  socket = QmpClientSocket(name)
+  return await QueryCpusFastQmpCmd(socket)(obj)

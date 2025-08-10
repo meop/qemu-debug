@@ -1,11 +1,11 @@
 import click
 import pandas as pd
 
-from lib.cmd import Cmd, coroutine
+from lib.cmd import QmpCmd, coroutine
 from lib.qmp import QmpClientSocket
 
 
-class QueryBlockstatsCmd(Cmd):
+class QueryBlockstatsQmpCmd(QmpCmd):
   def __init__(self, socket: QmpClientSocket):
     super().__init__(socket, 'query-blockstats')
 
@@ -31,9 +31,9 @@ class QueryBlockstatsCmd(Cmd):
 
 
 @click.command
-@click.argument('-n', '--name')
+@click.argument('name', required=True)
 @click.pass_obj
 @coroutine
-async def query_blockstats(obj: dict):
-  socket = QmpClientSocket(obj['name'])
-  return await QueryBlockstatsCmd(socket)(obj)
+async def query_blockstats(obj: dict, name: str):
+  socket = QmpClientSocket(name)
+  return await QueryBlockstatsQmpCmd(socket)(obj)

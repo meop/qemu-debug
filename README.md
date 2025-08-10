@@ -1,1 +1,1 @@
-# qemu-cli
+# qemu-debug

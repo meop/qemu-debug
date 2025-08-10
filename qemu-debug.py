@@ -2,6 +2,7 @@ import sys
 
 import click
 
+from lib.cli.cpu import cpu
 from lib.cli.qmp import qmp
 from lib.file import Format
 
@@ -24,6 +25,7 @@ def cli(ctx: dict, format: str, print: bool, save: bool):
   }
 
 
+cli.add_command(cpu)
 cli.add_command(qmp)
 
 

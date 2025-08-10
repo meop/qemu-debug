@@ -1,10 +1,11 @@
 from typing import List
 
 import click
+from click_params import IntListParamType
 import pandas as pd
 
 from lib.cli.qmp.query_cpus_fast import QueryCpusFastCmd
-from lib.cmd import Cmd, coroutine
+from lib.cmd import QmpCmd, coroutine
 from lib.qmp import QmpClientSocket
 
 TARGET_PROVIDER_STATS = {
@@ -95,12 +96,12 @@ TARGET_PROVIDER_STATS = {
 }
 
 
-class QueryStatsCmd(Cmd):
+class QueryStatsQmpCmd(QmpCmd):
   def __init__(self, socket: QmpClientSocket):
     super().__init__(socket, 'query-stats')
 
   async def __call__(
-    self, obj: dict, index: int, target: str, provider: str, stats: List[str]
+    self, obj: dict, cpus: List[int], target: str, provider: str, stats: List[str]
   ):
     providers_to_names = []
     for p in [provider] if provider else TARGET_PROVIDER_STATS[target].keys():
@@ -121,7 +122,7 @@ class QueryStatsCmd(Cmd):
       for i, r in enumerate(
         await QueryCpusFastCmd(self.socket)({**obj, 'print': False, 'save': False})
       ):
-        if index > -1 and index != i:
+        if cpus and i not in cpus:
           continue
         arg_base_copy = arg_base.copy()
         arg_base_copy.update({'vcpus': [r['qom_path']]})
@@ -168,14 +169,15 @@ class QueryStatsCmd(Cmd):
 
 
 @click.command
-@click.option('-i', '--index', default=-1, type=click.INT)
+@click.option('-c', '--cpus', type=IntListParamType)
+@click.argument('name', required=True)
 @click.argument('target', required=True)
 @click.argument('provider', required=False, default='')
 @click.argument('stats', nargs=-1)
 @click.pass_obj
 @coroutine
 async def query_stats(
-  obj: dict, index: int, target: str, provider: str, stats: List[str]
+  obj: dict, cpus: List[int], name: str, target: str, provider: str, stats: List[str]
 ):
-  socket = QmpClientSocket(obj['name'])
-  return await QueryStatsCmd(socket)(obj, index, target, provider, stats)
+  socket = QmpClientSocket(name)
+  return await QueryStatsQmpCmd(socket)(obj, cpus, target, provider, stats)
