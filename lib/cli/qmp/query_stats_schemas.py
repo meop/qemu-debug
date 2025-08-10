@@ -5,7 +5,7 @@ from lib.cmd import QmpCmd, coroutine
 from lib.qmp import QmpClientSocket
 
 
-class QueryStatsSchemasQmpCmd(QmpCmd):
+class QueryStatsSchemasCmd(QmpCmd):
   def __init__(self, socket: QmpClientSocket):
     super().__init__(socket, 'query-stats-schemas')
 
@@ -35,9 +35,8 @@ class QueryStatsSchemasQmpCmd(QmpCmd):
 
 
 @click.command
-@click.argument('name', required=True)
 @click.pass_obj
 @coroutine
-async def query_stats_schemas(obj: dict, name: str):
-  socket = QmpClientSocket(name)
-  return await QueryStatsSchemasQmpCmd(socket)(obj)
+async def query_stats_schemas(obj: dict):
+  socket = QmpClientSocket(obj['name'])
+  return await QueryStatsSchemasCmd(socket)(obj)

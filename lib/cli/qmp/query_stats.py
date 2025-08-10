@@ -96,7 +96,7 @@ TARGET_PROVIDER_STATS = {
 }
 
 
-class QueryStatsQmpCmd(QmpCmd):
+class QueryStatsCmd(QmpCmd):
   def __init__(self, socket: QmpClientSocket):
     super().__init__(socket, 'query-stats')
 
@@ -169,15 +169,14 @@ class QueryStatsQmpCmd(QmpCmd):
 
 
 @click.command
-@click.option('-c', '--cpus', type=IntListParamType)
-@click.argument('name', required=True)
+@click.option('-c', '--cpus', type=IntListParamType(), default=[])
 @click.argument('target', required=True)
-@click.argument('provider', required=False, default='')
+@click.argument('provider', default='')
 @click.argument('stats', nargs=-1)
 @click.pass_obj
 @coroutine
 async def query_stats(
-  obj: dict, cpus: List[int], name: str, target: str, provider: str, stats: List[str]
+  obj: dict, cpus: List[int], target: str, provider: str, stats: List[str]
 ):
-  socket = QmpClientSocket(name)
-  return await QueryStatsQmpCmd(socket)(obj, cpus, target, provider, stats)
+  socket = QmpClientSocket(obj['name'])
+  return await QueryStatsCmd(socket)(obj, cpus, target, provider, stats)

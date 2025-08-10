@@ -2,51 +2,56 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "query-blockstats",
+      "name": "cpu load",
       "type": "debugpy",
       "request": "launch",
-      "program": "qemu-cli.py",
+      "program": "qemu-debug.py",
+      "args": [
+        "cpu",
+        "load",
+        "--cpus",
+        "0,1"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "qmp query-blockstats",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "qemu-debug.py",
       "args": [
         "--save",
+        "qmp",
         "glass",
         "query-blockstats"
       ],
       "console": "integratedTerminal"
     },
     {
-      "name": "query-cpus-fast",
+      "name": "qmp query-cpus-fast",
       "type": "debugpy",
       "request": "launch",
-      "program": "qemu-cli.py",
+      "program": "qemu-debug.py",
       "args": [
         "--save",
+        "qmp",
         "glass",
         "query-cpus-fast"
       ],
       "console": "integratedTerminal"
     },
     {
-      "name": "query-stats-vm",
+      "name": "qmp query-stats vcpu",
       "type": "debugpy",
       "request": "launch",
-      "program": "qemu-cli.py",
+      "program": "qemu-debug.py",
       "args": [
         "--save",
+        "qmp",
         "glass",
         "query-stats",
-        "vm"
-      ],
-      "console": "integratedTerminal"
-    },
-    {
-      "name": "query-stats-vcpu",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "qemu-cli.py",
-      "args": [
-        "--save",
-        "glass",
-        "query-stats",
+        "--cpus",
+        "0",
         "vcpu",
         "kvm",
         "fpu_reload",
@@ -56,12 +61,27 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "query-stats-cryptodev",
+      "name": "qmp query-stats vm",
       "type": "debugpy",
       "request": "launch",
-      "program": "qemu-cli.py",
+      "program": "qemu-debug.py",
       "args": [
         "--save",
+        "qmp",
+        "glass",
+        "query-stats",
+        "vm"
+      ],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "qmp query-stats cryptodev",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "qemu-debug.py",
+      "args": [
+        "--save",
+        "qmp",
         "glass",
         "query-stats",
         "cryptodev"
@@ -69,12 +89,13 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "query-stats-schemas",
+      "name": "qmp query-stats-schemas",
       "type": "debugpy",
       "request": "launch",
-      "program": "qemu-cli.py",
+      "program": "qemu-debug.py",
       "args": [
         "--save",
+        "qmp",
         "glass",
         "query-stats-schemas"
       ],

@@ -5,7 +5,7 @@ from lib.cmd import QmpCmd, coroutine
 from lib.qmp import QmpClientSocket
 
 
-class QueryCpusFastQmpCmd(QmpCmd):
+class QueryCpusFastCmd(QmpCmd):
   def __init__(self, socket: QmpClientSocket):
     super().__init__(socket, 'query-cpus-fast')
 
@@ -33,9 +33,8 @@ class QueryCpusFastQmpCmd(QmpCmd):
 
 
 @click.command
-@click.argument('name', required=True)
 @click.pass_obj
 @coroutine
-async def query_cpus_fast(obj: dict, name: str):
-  socket = QmpClientSocket(name)
-  return await QueryCpusFastQmpCmd(socket)(obj)
+async def query_cpus_fast(obj: dict):
+  socket = QmpClientSocket(obj['name'])
+  return await QueryCpusFastCmd(socket)(obj)

@@ -7,8 +7,14 @@ from lib.cli.qmp.query_stats_schemas import query_stats_schemas
 
 
 @click.group
-def qmp():
-  pass
+@click.argument('name', required=True)
+@click.pass_obj
+def qmp(obj: dict, name: str):
+  obj.update(
+    {
+      'name': name,
+    }
+  )
 
 
 qmp.add_command(query_blockstats)

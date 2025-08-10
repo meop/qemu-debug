@@ -3,7 +3,7 @@ import click
 from lib.cmd import coroutine
 
 
-class CpuPinCmd:
+class PinCmd:
   async def __call__(self, obj: dict):
     pass
 
@@ -11,5 +11,5 @@ class CpuPinCmd:
 @click.command
 @click.pass_obj
 @coroutine
-async def cpu_pin(obj: dict):
-  return await CpuPinCmd()(obj)
+async def pin(obj: dict):
+  return await PinCmd()(obj)
