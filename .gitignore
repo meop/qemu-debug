@@ -10,5 +10,6 @@ wheels/
 .venv
 
 # Project
-.vscode/
+.vscode/*
+!.vscode/launch.json
 save/
