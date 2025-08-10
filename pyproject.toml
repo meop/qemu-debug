@@ -10,6 +10,7 @@ dependencies = [
     "click-params>=0.5.0",
     "pandas>=2.3.1",
     "prettytable>=3.16.0",
+    "psutil>=7.0.0",
     "pyyaml>=6.0.2",
     "qemu-qmp>=0.0.3",
 ]

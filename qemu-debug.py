@@ -1,5 +1,3 @@
-import sys
-
 import click
 
 from lib.cli.cpu import cpu
@@ -28,9 +26,8 @@ def cli(ctx: dict, format: str, print: bool, save: bool):
 cli.add_command(cpu)
 cli.add_command(qmp)
 
-
 if __name__ == '__main__':
   try:
     cli()
   except KeyboardInterrupt:
-    sys.exit(0)
+    pass
